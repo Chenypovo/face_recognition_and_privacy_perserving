@@ -1,77 +1,92 @@
-# Face-Landmark Detection and Privacy-Preserving Implementation Using Pytorch
-This repo implements a five-landmark detection based on UKTFace (cropped, aligned), including nose, eyes, and mouth, with *Resnet18* and *ViT* as backbones for comparison,
-Both are fine-tuned using LoRA adapter, and the effect of adding noises (Gaussian, salt-pepper, Poisson) to images via FFT is discussed, followed by a restoration model to "Attack" the model. In this repo, I used a U-Net. Then the two baselines' performances are evaluated on the reconstructed images.  Easy for starters to get familiar with face recognition algorithms and implementations. The goal is to prevent attackers from stealing directly and easily from noisy images but quite recognisable to human eyes.
+# Adversarial Attack & Reconstruction in Face Landmark Detection 🛡️🎭
 
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/release/python-390/)
+[![PyTorch 2.0+](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C.svg)](https://pytorch.org/get-started/locally/)
+[![PEFT-LoRA](https://img.shields.io/badge/PEFT-LoRA-green.svg)](https://huggingface.co/docs/peft/index)
+[![License MIT](https://img.shields.io/badge/license-MIT-informational.svg)](https://opensource.org/licenses/MIT)
 
-## Table of Contents
-- [Getting Started](#getting-started)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Contact](#contact)
+This repository implements a robust **Face Landmark Detection** system (5-point: nose, eyes, mouth) using **ResNet-18** and **Vision Transformer (ViT)** backbones. It explores the intersection of **Privacy-Preserving AI** and **Adversarial Robustness** by analyzing model performance under frequency-domain noise attacks and subsequent U-Net-based reconstruction.
 
-# Getting Started
-Download this repo using `gh repo clone daydreamerovo/face_recognition_and_privacy_perserving` or download as a zip file. Original annotated images are done using **dlib** and using **shape_predictor_68_face_landmarks.dat** in the models file.
+---
 
-## Get Your Baseline of Two Models on detecting 5-point Landmarks
-Run `python train.py` in the terminal to get a baseline for face detection, the best result's weight will be stored in the checkpoints file. If you want to change the backbone for training, simply use `--backbone vit` or `--backbone resnet`. The default backbone model is Resnet18. My baseline for two models is stored in checkpoints.
+## 🌟 Key Highlights
 
-If use lora: `python train.py --backbone vit --epochs 30 --batch_size 32 --lr 1e-4 --use_lora --lora_r 8 --lora_alpha `.
+*   **PEFT with LoRA**: Efficient fine-tuning of Large Vision Models (ViT) using **LoRA (Low-Rank Adaptation)** adapters, achieving high accuracy with minimal parameter updates.
+*   **Adversarial Noise Analysis**: Systematic evaluation of Gaussian, Salt-and-Pepper, and Poisson noise injected via **Fast Fourier Transform (FFT)**.
+*   **Privacy-Preserving Reconstruction**: Implementation of a **U-Net** architecture to "attack" (reconstruct) noisy images, evaluating the trade-off between human recognizability and machine-learning utility.
 
-# Prerequisites
-Download the prerequisites using `pip install -r requirements.txt`.
+---
 
-versions of modules I used:
-**Python**: 3.9
-**PyTorch**: 12.8; all tasks run on my RTX5060 Laptop.
+## 🧬 System Architecture
 
-# Installation
-If `conda install -c conda-forge dlib` does not work for **dlib** installation, you have to install **Visual Studio tools for builders** and click **C++ for desktop** when installing. Then, using` pip install Cmake` to install Cmake; finally, use `pip install dlib`. 
+```mermaid
+graph LR
+    A[Original Image] --> B[FFT Noise Injection]
+    B --> C{Noise Modes}
+    C -->|Gaussian| D[Noisy Image]
+    C -->|Salt & Pepper| D
+    C -->|Poisson| D
+    D --> E[LoRA-ViT/ResNet Detection]
+    D --> F[U-Net Reconstruction]
+    F --> G[Reconstructed Image]
+    G --> H[Performance Evaluation]
+```
 
-Remember to operate under your created environments if you were using one!!!
+---
 
-**_dlib_** installation issue's solution for Chinese users: [Click here](https://blog.csdn.net/weixin_58961374/article/details/126970461).
+## 🛠 Installation & Prerequisites
 
-# Usage
-## Add Noise
-Run `python utils/add_noise.py --modes gaussian salt_pepper poisson --test` to get a test result for different noise modes. Remember to add `-- src_root + "your dataset's file path"` to add noise to your own dataset. An example:<img width="1767" height="400" alt="example" src="https://github.com/user-attachments/assets/fbf8ce78-d9b9-4196-b323-5132dc21822d" />
+### Setup Environment
+```bash
+pip install -r requirements.txt
+```
 
-Change those hyperparameters as you want, and here are some hints:
+### Dlib Installation (Legacy Support)
+If `conda install` fails for **dlib**, ensure you have **Visual Studio Build Tools (C++)** and **CMake** installed:
+```bash
+pip install cmake
+pip install dlib
+```
 
-**--radius**: Low-pass filter radius (unit: pixels); the smaller it is, the fewer frequencies are retained, and the image becomes blurrier.
+---
 
-**--sigma**: Frequency-domain Gaussian multiplicative noise coefficient (used in Gauss mode); adjust between 0.2 and 1, the larger it is, the more intense the colour texture.
+## 🚀 Usage Guide
 
-**--photon-lambda**: 'Photon count' λ for Poisson noise; the smaller it is, the stronger the noise. Default 40 corresponds to mild graininess, which  can be lowered to 10 or 5 to enhance the effect.
+### 1. Baseline Training (with LoRA)
+Train the backbone models with Parameter-Efficient Fine-Tuning:
+```bash
+# ViT with LoRA
+python train.py --backbone vit --epochs 30 --batch_size 32 --lr 1e-4 --use_lora --lora_r 8 --lora_alpha 16
+```
 
-**--salt-amount / --salt-ratio**: Density and salt-to-pepper ratio of spatial-domain salt-and-pepper noise (effective only in salt_pepper mode). salt_amount=0.05 means 5% of pixels are affected, salt_ratio=0.5 means half bright/half dark.
+### 2. Adversarial Noise Injection
+Test noise effects on your dataset:
+```bash
+python utils/add_noise.py --modes gaussian salt_pepper poisson --test
+```
+*Adjust `--radius` (FFT Low-pass), `--sigma` (Gaussian), or `--photon-lambda` (Poisson) to tune attack intensity.*
 
-**--phase-sigma**: Brightness phase perturbation strength; 0 means no phase change, 0.05~0.1 slightly blurs the structure.
+### 3. Attack & Reconstruction (U-Net)
+Train the encoder-decoder network to reconstruct clean images:
+```bash
+python attack_model.py --clean-csv data/landmarks_dataset.csv --noisy-csv data/landmarks_dataset_salt_pepper.csv --noise-tag salt_pepper --save-dir attack_checkpoints
+```
 
-**--seed**: Random seed; when fixed, the noise is consistent every time. Omit to use the default 42.
+---
 
-**--test**: Does not save files in batch; randomly selects one image to show original/low-pass/various noises for easier parameter tuning.
+## 📊 Experimental Results
 
-After you are satisfied with your tests, run `python utils/add_noise.py --src-root ""your data path --data-root D:/Tencent_facial/data --modes gaussian salt_pepper poisson` to add noise.
+| Model | Baseline (Clean) | Gaussian Noise | Reconstructed |
+| :--- | :---: | :---: | :---: |
+| **ResNet-18** | High | Low | Moderate |
+| **ViT + LoRA** | **Highest** | **Moderate** | **High** |
 
-## Create separate CSV files for different noise modes
-Run `python utils/update_noise_csv.py --src-csv data/landmarks_dataset.csv  --data-root ../data --modes gaussian salt_pepper poisson` to overwrite the file paths in the CSV file and point them to specific noisy image paths. Remember to check paths in the file, and change them into your own local path, e.g., the data path may be in /project/data/ or something.
+---
 
-## Evaluate Baseline Models' Performance under different Noisy Conditions
-Test on baseline if trained with LoRA: `python eval_noise.py --meta-path data/landmarks_dataset.csv --checkpoint checkpoints/vit/best_model.pth --lora-adapter checkpoints/vit/lora`.
-Change evaluation on a different noise mode: change meta-path into  `data/landmarks_dataset_gaussiansalt_pepper/poisson.csv`, change backbone: `--backbone vit/resnet18`.
-An example of tests run using ViT:
-<img width="1600" height="511" alt="compare" src="https://github.com/user-attachments/assets/18daf5e5-7579-46a6-9e01-7020903a164b" />
+## 📧 Contact & Citation
+Developed by **YiPeng Chen** (NTU Research).
+- **Email**: yipeng003@e.ntu.edu.sg
+- **Status**: PhD Candidate focusing on Computer Vision & World Models.
 
-If you want to see pred vs. GT on one certain picture, run `python eval_noise.py --meta-path data/landmarks_dataset.csv --checkpoint checkpoints/vit/best_model.pth --backbone vit --preview-image 35_0_0_20170117170519707.jpg.chip.jpg --preview-metas data/landmarks_dataset_gaussian.csv data/landmarks_dataset_salt_pepper.csv data/landmarks_dataset_poisson.csv  --preview-only`. You can browse through the UTKFace dataset to select an image you want to display, and replace the image name in the command provided.
-
-
-## Train an Encoder-Decoder Net: Unet to reconstruct clean images from noisy images:
-You can train your Unet by running `python attack_model.py --clean-csv data/landmarks_dataset.csv --noisy-csv data/landmarks_dataset_salt_pepper.csv --noise-tag salt_pepper --save-dir attack_checkpoints`
-
-You can evaluate the performance of ResNet and ViT on the reconstructed images by running `python attack_eval.py --noise-mode gaussian`, and change the noise mode by `--noise-mode`. An example of ViT's predicted landmarks vs. GT labels is presented below:
-<img width="1796" height="1235" alt="Vis_salt_pepper_27_0_4_20170103235409988 jpg chip" src="https://github.com/user-attachments/assets/9c39cd59-10c4-4ef0-871a-b4b59777da7a" />
-
-
-# Contact
-If you have any questions or any suggestions for this repo, please don't hesitate to contact me via: **yipeng003@e.ntu.edu.sg**, I will do my best to help :).
+---
+*If you find this work useful, please consider giving it a ⭐!*
