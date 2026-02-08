@@ -66,11 +66,15 @@ python utils/add_noise.py --modes gaussian salt_pepper poisson --test
 ```
 *Adjust `--radius` (FFT Low-pass), `--sigma` (Gaussian), or `--photon-lambda` (Poisson) to tune attack intensity.*
 
+![Noise Injection Example](https://github.com/user-attachments/assets/fbf8ce78-d9b9-4196-b323-5132dc21822d)
+
 ### 3. Attack & Reconstruction (U-Net)
 Train the encoder-decoder network to reconstruct clean images:
 ```bash
 python attack_model.py --clean-csv data/landmarks_dataset.csv --noisy-csv data/landmarks_dataset_salt_pepper.csv --noise-tag salt_pepper --save-dir attack_checkpoints
 ```
+
+![Reconstruction Result](https://github.com/user-attachments/assets/9c39cd59-10c4-4ef0-871a-b4b59777da7a)
 
 ---
 
@@ -80,6 +84,8 @@ python attack_model.py --clean-csv data/landmarks_dataset.csv --noisy-csv data/l
 | :--- | :---: | :---: | :---: |
 | **ResNet-18** | High | Low | Moderate |
 | **ViT + LoRA** | **Highest** | **Moderate** | **High** |
+
+![Evaluation Comparison](https://github.com/user-attachments/assets/18daf5e5-7579-46a6-9e01-7020903a164b)
 
 ---
 
