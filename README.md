@@ -90,9 +90,9 @@ python attack_model.py --clean-csv data/landmarks_dataset.csv --noisy-csv data/l
 ---
 
 ## 📧 Contact & Citation
-Developed by **YiPeng Chen** (NTU Research).
+Developed by **YiPeng Chen**.
 - **Email**: yipeng003@e.ntu.edu.sg
-- **Status**: PhD Candidate focusing on Computer Vision & World Models.
+- **GitHub**: [Chenypovo](https://github.com/Chenypovo)
 
 ---
 *If you find this work useful, please consider giving it a ⭐!*
